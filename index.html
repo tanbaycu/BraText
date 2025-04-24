@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Generator</title>
+    <style>
+        /* Font definitions */
+        @font-face {
+            font-family: 'arial_narrowregular';
+            src: url('https://fonts.googleapis.com/css2?family=Arial+Narrow&display=swap');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'arial_narrowregular', 'Arial Narrow', Arial, sans-serif;
+            background-color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .logo-container {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .logo .highlight {
+            color: #ff3366;
+            position: relative;
+            display: inline-block;
+            transform: rotate(-5deg) translateY(-2px);
+            font-size: 1.2em;
+        }
+        
+        .logo .highlight::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: #ff3366;
+        }
+        
+        .verified-badge {
+            margin-left: 5px;
+            width: 16px;
+            height: 16px;
+            background-color: #1DA1F2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+        }
+        
+        #memeContainer {
+            position: relative;
+            display: flex;
+            width: 100%;
+            height: 80vh;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #textOverlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            color: #000000;
+            font-family: 'arial_narrowregular', 'Arial Narrow', Arial, sans-serif;
+            font-size: 100px;
+            text-align: center;
+            filter: blur(1.5px);
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        /* Improved input field styling */
+        .input-wrapper {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 450px;
+            display: flex;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        #textInput {
+            width: 100%;
+            padding: 0 15px;
+            font-size: 16px;
+            border: 1px solid #d1d1d1;
+            border-radius: 16px;
+            font-family: 'arial_narrowregular', 'Arial Narrow', Arial, sans-serif;
+            text-align: center;
+            height: 42px;
+            line-height: 42px;
+            outline: none;
+            position: relative;
+            z-index: 50;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            background-color: white;
+        }
+        
+        #textInput:focus {
+            border-color: #ff3366;
+            box-shadow: 0 0 0 2px rgba(255, 51, 102, 0.1);
+        }
+        
+        /* Settings menu - icon only */
+        .settings-menu {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+        
+        .settings-button {
+            background-color: #f8f8f8;
+            border: 1px solid #e0e0e0;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .settings-button:hover {
+            background-color: #f0f0f0;
+            transform: rotate(30deg);
+        }
+        
+        .settings-panel {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            width: 240px;
+            padding: 16px;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .settings-panel.active {
+            display: block;
+            animation: fadeIn 0.2s ease;
+        }
+        
+        .settings-header {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .settings-option {
+            margin-bottom: 16px;
+        }
+        
+        .settings-option:last-child {
+            margin-bottom: 0;
+        }
+        
+        .settings-option label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .settings-option select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+            background-color: #f8f8f8;
+        }
+        
+        .settings-option input[type="range"] {
+            width: 100%;
+            margin: 6px 0;
+        }
+        
+        .range-value {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* SVG icons */
+        .icon {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+        
+        .icon-large {
+            width: 20px;
+            height: 20px;
+        }
+        
+        /* Enhanced responsive styles for mobile */
+        @media (max-width: 768px) {
+            #textOverlay {
+                font-size: 80px;
+                max-width: 90%;
+            }
+            
+            #textInput {
+                height: 38px;
+                line-height: 38px;
+                font-size: 15px;
+                padding: 0 12px;
+            }
+            
+            .logo {
+                font-size: 20px;
+            }
+            
+            .settings-panel {
+                width: 220px;
+            }
+            
+            .logo-container {
+                top: 15px;
+                left: 15px;
+            }
+            
+            .settings-menu {
+                top: 15px;
+                right: 15px;
+            }
+            
+            .settings-button {
+                width: 36px;
+                height: 36px;
+            }
+            
+            .input-wrapper {
+                bottom: 15px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            #textOverlay {
+                font-size: 60px;
+            }
+            
+            #textInput {
+                height: 36px;
+                line-height: 36px;
+                font-size: 14px;
+                padding: 0 10px;
+                border-radius: 12px;
+            }
+            
+            .input-wrapper {
+                width: 85%;
+                bottom: 20px;
+            }
+            
+            .logo {
+                font-size: 18px;
+            }
+            
+            .settings-panel {
+                width: 200px;
+                right: 0;
+            }
+            
+            .logo-container {
+                top: 12px;
+                left: 12px;
+            }
+            
+            .settings-menu {
+                top: 12px;
+                right: 12px;
+            }
+            
+            .settings-button {
+                width: 32px;
+                height: 32px;
+            }
+        }
+        
+        /* Small mobile devices */
+        @media (max-width: 360px) {
+            #textInput {
+                height: 34px;
+                line-height: 34px;
+                font-size: 13px;
+            }
+            
+            .logo {
+                font-size: 16px;
+            }
+            
+            .input-wrapper {
+                bottom: 15px;
+                width: 90%;
+            }
+        }
+        
+        /* Landscape mode optimization */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .input-wrapper {
+                bottom: 10px;
+            }
+            
+            #textInput {
+                height: 32px;
+                line-height: 32px;
+            }
+            
+            .logo-container {
+                top: 10px;
+                left: 10px;
+            }
+            
+            .settings-menu {
+                top: 10px;
+                right: 10px;
+            }
+        }
+        
+        /* iPhone SE and other very small devices */
+        @media (max-width: 375px) and (max-height: 667px) {
+            #textInput {
+                height: 32px;
+                line-height: 32px;
+                font-size: 13px;
+            }
+            
+            .logo-container {
+                top: 10px;
+                left: 10px;
+            }
+            
+            .settings-menu {
+                top: 10px;
+                right: 10px;
+            }
+            
+            .input-wrapper {
+                bottom: 15px;
+            }
+        }
+        
+        /* Fix for iOS Safari's input field issues */
+        @supports (-webkit-touch-callout: none) {
+            #textInput {
+                font-size: 16px; /* Prevent zoom on focus in iOS */
+                padding-left: 5px;
+                padding-right: 5px;
+            }
+            
+            .input-wrapper {
+                bottom: 15px; /* Adjust for iOS devices */
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Logo with special styling for "bay" and verified badge -->
+    <div class="logo-container">
+        <div class="logo" id="brandLogo">
+            tan<span class="highlight" id="highlightPart">bay</span>cu
+        </div>
+        <div class="verified-badge">✓</div>
+    </div>
+    
+    <!-- Settings menu with icon only -->
+    <div class="settings-menu">
+        <button class="settings-button" id="settingsToggle">
+            <!-- Settings icon (Lucide style) -->
+            <svg class="icon icon-large" viewBox="0 0 24 24">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+        </button>
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-header">
+                <!-- Sliders icon (Lucide style) -->
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M3 3h18v18H3z"></path>
+                    <path d="M13 6h5"></path>
+                    <path d="M13 12h5"></path>
+                    <path d="M13 18h5"></path>
+                    <path d="M6 6h.01"></path>
+                    <path d="M6 12h.01"></path>
+                    <path d="M6 18h.01"></path>
+                </svg>
+                Tùy chỉnh hiển thị
+            </div>
+            <div class="settings-option">
+                <label for="blurAmount">
+                    <!-- Blur icon (Lucide style) -->
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M12 3v18"></path>
+                        <path d="M3 12h18"></path>
+                    </svg>
+                    Độ mờ:
+                </label>
+                <input type="range" id="blurAmount" min="0" max="5" step="0.1" value="1.5">
+                <div class="range-value">
+                    <span>0</span>
+                    <span>5</span>
+                </div>
+            </div>
+            <div class="settings-option">
+                <label for="textColor">
+                    <!-- Palette icon (Lucide style) -->
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <circle cx="13.5" cy="6.5" r="2.5"></circle>
+                        <circle cx="17.5" cy="10.5" r="2.5"></circle>
+                        <circle cx="8.5" cy="7.5" r="2.5"></circle>
+                        <circle cx="6.5" cy="12.5" r="2.5"></circle>
+                        <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path>
+                    </svg>
+                    Màu chữ:
+                </label>
+                <select id="textColor">
+                    <option value="#000000">Đen</option>
+                    <option value="#333333">Xám đậm</option>
+                    <option value="#ff3366">Đỏ</option>
+                    <option value="#1DA1F2">Xanh</option>
+                </select>
+            </div>
+            <div class="settings-option">
+                <label for="textSize">
+                    <!-- Type icon (Lucide style) -->
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <polyline points="4 7 4 4 20 4 20 7"></polyline>
+                        <line x1="9" y1="20" x2="15" y2="20"></line>
+                        <line x1="12" y1="4" x2="12" y2="20"></line>
+                    </svg>
+                    Kích thước chữ:
+                </label>
+                <input type="range" id="textSize" min="60" max="140" step="10" value="100">
+                <div class="range-value">
+                    <span>Nhỏ</span>
+                    <span>Lớn</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main text display area -->
+    <div id="memeContainer">
+        <div id="textOverlay"></div>
+    </div>
+    
+    <!-- Improved input field with wrapper -->
+    <div class="input-wrapper">
+        <input type="text" id="textInput" value="Nhập văn bản ở đây..." maxlength="50">
+    </div>
+    
+    <script>
+        // TextFit library - simplified version
+        function textFit(el, options) {
+            if (!options) options = {};
+            
+            const settings = {
+                minFontSize: options.minFontSize || 8,
+                maxFontSize: options.maxFontSize || 100
+            };
+            
+            // Create or get the inner span
+            let innerSpan;
+            if (el.innerHTML.indexOf('textFitted') === -1) {
+                innerSpan = document.createElement('span');
+                innerSpan.className = 'textFitted';
+                innerSpan.style.display = 'inline-block';
+                innerSpan.innerHTML = el.innerHTML;
+                el.innerHTML = '';
+                el.appendChild(innerSpan);
+            } else {
+                innerSpan = el.querySelector('span.textFitted');
+            }
+            
+            // Binary search for best fit
+            let low = settings.minFontSize;
+            let high = settings.maxFontSize;
+            let size = low;
+            
+            while (low <= high) {
+                const mid = Math.floor((high + low) / 2);
+                innerSpan.style.fontSize = mid + 'px';
+                
+                if (innerSpan.scrollWidth <= el.clientWidth && innerSpan.scrollHeight <= el.clientHeight) {
+                    size = mid;
+                    low = mid + 1;
+                } else {
+                    high = mid - 1;
+                }
+            }
+            
+            innerSpan.style.fontSize = size + 'px';
+        }
+        
+        // Initialize
+        const textInput = document.getElementById('textInput');
+        const textOverlay = document.getElementById('textOverlay');
+        const settingsToggle = document.getElementById('settingsToggle');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const blurAmount = document.getElementById('blurAmount');
+        const textColor = document.getElementById('textColor');
+        const textSize = document.getElementById('textSize');
+        const brandLogo = document.getElementById('brandLogo');
+        const highlightPart = document.getElementById('highlightPart');
+        
+        // Set initial text
+        textOverlay.innerText = textInput.value;
+        textFit(textOverlay, { maxFontSize: 100 });
+        
+        // Clear default text on first focus
+        textInput.addEventListener('focus', function() {
+            if (this.value === 'Nhập văn bản ở đây...') {
+                this.value = '';
+            }
+        });
+        
+        // Update text as user types
+        textInput.addEventListener('input', function() {
+            textOverlay.innerText = this.value;
+            textFit(textOverlay, { maxFontSize: parseInt(textSize.value) });
+        });
+        
+        // Handle window resize for better responsiveness
+        window.addEventListener('resize', function() {
+            textFit(textOverlay, { maxFontSize: parseInt(textSize.value) });
+        });
+        
+        // Toggle settings panel
+        settingsToggle.addEventListener('click', function(event) {
+            event.stopPropagation();
+            settingsPanel.classList.toggle('active');
+        });
+        
+        // Close settings panel when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!settingsPanel.contains(event.target) && event.target !== settingsToggle) {
+                settingsPanel.classList.remove('active');
+            }
+        });
+        
+        // Update blur amount
+        blurAmount.addEventListener('input', function() {
+            textOverlay.style.filter = `blur(${this.value}px)`;
+        });
+        
+        // Update text color
+        textColor.addEventListener('change', function() {
+            textOverlay.style.color = this.value;
+        });
+        
+        // Update text size
+        textSize.addEventListener('input', function() {
+            textFit(textOverlay, { maxFontSize: parseInt(this.value) });
+        });
+        
+        // Brand name cycling
+        const brandNames = [
+            { text: "tan<span class='highlight'>bay</span>cu", highlight: "bay" },
+            { text: "<span class='highlight'>Tan</span> Minh Bay", highlight: "Tan" },
+            { text: "si<span class='highlight'>tinh</span>", highlight: "tinh" },
+            { text: "<span class='highlight'>tan</span>baycu", highlight: "tan" },
+            { text: "Tran Minh <span class='highlight'>Tan</span>", highlight: "Tan" }
+        ];
+        
+        let currentBrandIndex = 0;
+        
+        function cycleBrandName() {
+            const brand = brandNames[currentBrandIndex];
+            brandLogo.innerHTML = brand.text;
+            
+            currentBrandIndex = (currentBrandIndex + 1) % brandNames.length;
+        }
+        
+        // Start cycling brand names
+        setInterval(cycleBrandName, 3000);
+        
+        // Prevent iOS zoom on input focus
+        document.addEventListener('touchstart', function(event) {
+            if (event.target.tagName === 'INPUT') {
+                const viewportMeta = document.querySelector('meta[name="viewport"]');
+                if (viewportMeta) {
+                    viewportMeta.content = 'width=device-width, initial-scale=1, maximum-scale=1';
+                    setTimeout(function() {
+                        viewportMeta.content = 'width=device-width, initial-scale=1';
+                    }, 300);
+                }
+            }
+        }, false);
+    </script>
+</body>
+</html>
