@@ -1,651 +1,1446 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text Generator</title>
+    <title>Brat Generator</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
     <style>
-        /* Font definitions */
         @font-face {
-            font-family: 'arial_narrowregular';
-            src: url('https://fonts.googleapis.com/css2?family=Arial+Narrow&display=swap');
+            font-family: 'timesregular';
+            src: url('/sites/g/files/g2000017981/files/2024-01/times-roman-01-webfont.woff') format('woff');
             font-weight: normal;
             font-style: normal;
         }
         
+        @font-face {
+            font-family: 'arial_narrowregular';
+            src: url('https://www.bratgenerator.com/sites/g/files/g2000017981/files/2024-03/arial_narrow-webfont.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
         * {
             box-sizing: border-box;
-            margin: 0;
-            padding: 0;
         }
-        
+
         body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            text-align: center;
+            background-color: #fff;
             margin: 0;
             padding: 0;
-            font-family: 'arial_narrowregular', 'Arial Narrow', Arial, sans-serif;
-            background-color: white;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
         }
+
+        /* Typography System */
+        .text-xs { font-size: 11px; line-height: 1.3; }
+        .text-sm { font-size: 13px; line-height: 1.4; }
+        .text-base { font-size: 15px; line-height: 1.5; }
+        .text-lg { font-size: 17px; line-height: 1.6; }
         
-        .logo-container {
+        .font-light { font-weight: 300; }
+        .font-normal { font-weight: 400; }
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+
+        /* UI Controls - Fixed Layout */
+        .ui-controls {
             position: fixed;
             top: 20px;
             left: 20px;
+            right: 20px;
+            z-index: 100;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 20px;
+            align-items: start;
+            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .ui-controls.hidden {
+            opacity: 0;
+            transform: translateY(-20px);
+            pointer-events: none;
+        }
+
+        /* Left Panel - Theme Control */
+        .theme-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        .control-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(0, 0, 0, 0.5);
+            margin-bottom: 4px;
+        }
+
+        /* Color Selector - Compact */
+        .color-selector {
+            position: relative;
+        }
+
+        .color-dropdown-trigger {
             display: flex;
             align-items: center;
-            z-index: 100;
+            gap: 10px;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            min-width: 100px;
         }
-        
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
+
+        .color-dropdown-trigger:hover {
+            background: rgba(255, 255, 255, 1);
+            border-color: rgba(0, 0, 0, 0.12);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            transform: translateY(-1px);
         }
-        
-        .logo .highlight {
-            color: #ff3366;
-            position: relative;
-            display: inline-block;
-            transform: rotate(-5deg) translateY(-2px);
-            font-size: 1.2em;
-        }
-        
-        .logo .highlight::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: #ff3366;
-        }
-        
-        .verified-badge {
-            margin-left: 5px;
+
+        .color-preview {
             width: 16px;
             height: 16px;
-            background-color: #1DA1F2;
             border-radius: 50%;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .color-dropdown {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 12px;
+            padding: 8px;
+            display: none;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            z-index: 1002;
+        }
+
+        .color-dropdown.open {
+            display: block;
+        }
+
+        .color-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .color-option:hover {
+            background: rgba(0, 0, 0, 0.04);
+        }
+
+        .color-option.active {
+            background: rgba(0, 0, 0, 0.08);
+            color: rgba(0, 0, 0, 0.9);
+        }
+
+        .color-swatch {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Center - Empty space for text */
+        .center-space {
+            /* This creates space for the main text */
+        }
+
+        /* Right Panel - Present Controls */
+        .present-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-end;
+            min-width: 180px;
+        }
+
+        /* Session Status - Improved */
+        .session-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: rgba(0, 0, 0, 0.04);
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: rgba(0, 0, 0, 0.6);
+        }
+
+        .session-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .session-indicator.recording {
+            background: #ef4444;
+            animation: pulse 2s infinite;
+        }
+
+        .session-indicator.ready {
+            background: #22c55e;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Present Mode Section - Fixed */
+        .present-mode-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-end;
+            width: 100%;
+        }
+
+        .present-mode-selector {
+            position: relative;
+            width: 100%;
+        }
+
+        .present-mode-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            width: 100%;
+        }
+
+        .present-mode-trigger:hover {
+            background: rgba(0, 0, 0, 0.06);
+            border-color: rgba(0, 0, 0, 0.12);
+        }
+
+        .present-mode-dropdown {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            left: 0;
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 12px;
+            padding: 8px;
+            display: none;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            z-index: 1002;
+        }
+
+        .present-mode-dropdown.open {
+            display: block;
+        }
+
+        .present-mode-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .present-mode-option:hover {
+            background: rgba(0, 0, 0, 0.04);
+        }
+
+        .present-mode-option.active {
+            background: rgba(0, 0, 0, 0.08);
+        }
+
+        /* Play Button - Refined */
+        .play-button {
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 10px;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #000 0%, #333 100%);
             color: white;
-            font-size: 10px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 700;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
         }
-        
+
+        .play-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .play-button:hover::before {
+            left: 100%;
+        }
+
+        .play-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .play-button:active {
+            transform: translateY(0);
+        }
+
+        .play-button:disabled {
+            background: linear-gradient(135deg, #ccc 0%, #999 100%);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .play-button:disabled:hover {
+            transform: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Text Input - Improved positioning */
+        .input-container {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .input-container.hidden {
+            opacity: 0;
+            transform: translateX(-50%) translateY(20px);
+            pointer-events: none;
+        }
+
+        #textInput {
+            padding: 18px 24px;
+            font-size: 16px;
+            border: 2px solid rgba(0, 0, 0, 0.08);
+            border-radius: 14px;
+            width: 450px;
+            max-width: 80vw;
+            font-family: 'timesregular', serif;
+            text-align: center;
+            outline: none;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+        }
+
+        #textInput:focus {
+            border-color: rgba(0, 0, 0, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 0 0 4px rgba(0, 0, 0, 0.04);
+            transform: translateY(-2px);
+        }
+
+        #textInput::placeholder {
+            color: rgba(0, 0, 0, 0.4);
+            font-style: italic;
+        }
+
+        /* Main Content - GIỮ NGUYÊN PHIÊN BẢN CŨ */
         #memeContainer {
             position: relative;
-            display: flex;
+            display: block;
             width: 100%;
-            height: 80vh;
+            height: 100vh;
+            margin-top: 0;
+            font-size: 0px;
+            display: flex;
             align-items: center;
             justify-content: center;
         }
-        
+
+        #memeImage {
+            display: none;
+        }
+
         #textOverlay {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 2;
+            font-size: 48px;
             color: #000000;
-            font-family: 'arial_narrowregular', 'Arial Narrow', Arial, sans-serif;
-            font-size: 100px;
+            font-weight: 500;
+            font-family: arial_narrowregular, "Arial Narrow", sans-serif;
+            font-size: 280px;
             text-align: center;
-            filter: blur(1.5px);
             width: 100%;
-            max-width: 500px;
+            white-space: pre-line;
+            word-wrap: break-word;
         }
-        
-        /* Improved input field styling */
-        .input-wrapper {
+
+        /* Theme Styles - GIỮ NGUYÊN */
+        body {
+            background-color: #fff;
+        }
+
+        body.white div#toggleButtonWhite {
+            border: 2px solid #000;
+        }
+
+        body.green div#toggleButtonGreen {
+            border: 2px solid #000;
+        }
+
+        body.white #textOverlay {
+            font-size: 100px;
+            max-width: 500px;
+            text-align: justify;
+            text-align-last: justify;
+            padding: 20px;
+            height: 500px;
+        }
+
+        div#textOverlay span.textFitted {
+            font-weight: 500;
+            font-family: arial_narrowregular, "Arial Narrow", sans-serif;
+            font-size: 100px;
+            filter: blur(2px);
+            white-space: pre-line;
+            word-wrap: break-word;
+        }
+
+        body.green #textOverlay {
+            font-size: 5vw !important;
+        }
+
+        body.green div#textOverlay span.textFitted {
+            white-space: pre-line;
+            word-wrap: break-word;
+        }
+
+        /* Green Theme */
+        body.green #textInput {
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        body.green #textInput:focus {
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 4px rgba(255, 255, 255, 0.1);
+        }
+
+        body.green {
+            background-color: #8ACF00;
+        }
+
+        body.green .color-dropdown-trigger,
+        body.green .present-mode-trigger {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        body.green .color-dropdown-trigger:hover,
+        body.green .present-mode-trigger:hover {
+            background: rgba(255, 255, 255, 1);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        body.green .session-status {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Presentation Mode */
+        body.presentation-mode .ui-controls,
+        body.presentation-mode .input-container {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Presentation End Controls - Updated with Replay Button */
+        .presentation-end-controls {
             position: fixed;
-            bottom: 20px;
+            bottom: 40px;
             left: 50%;
             transform: translateX(-50%);
-            width: 90%;
-            max-width: 450px;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            gap: 16px;
+        }
+
+        .presentation-end-controls.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .presentation-control-button {
             display: flex;
             align-items: center;
-            z-index: 100;
-        }
-        
-        #textInput {
-            width: 100%;
-            padding: 0 15px;
-            font-size: 16px;
-            border: 1px solid #d1d1d1;
+            gap: 12px;
+            padding: 16px 24px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            border: none;
             border-radius: 16px;
-            font-family: 'arial_narrowregular', 'Arial Narrow', Arial, sans-serif;
-            text-align: center;
-            height: 42px;
-            line-height: 42px;
-            outline: none;
-            position: relative;
-            z-index: 50;
-            transition: all 0.2s ease;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            background-color: white;
-        }
-        
-        #textInput:focus {
-            border-color: #ff3366;
-            box-shadow: 0 0 0 2px rgba(255, 51, 102, 0.1);
-        }
-        
-        /* Settings menu - icon only */
-        .settings-menu {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 100;
-        }
-        
-        .settings-button {
-            background-color: #f8f8f8;
-            border: 1px solid #e0e0e0;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        
-        .settings-button:hover {
-            background-color: #f0f0f0;
-            transform: rotate(30deg);
+
+        .presentation-control-button:hover {
+            background: rgba(0, 0, 0, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
         }
-        
-        .settings-panel {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            margin-top: 8px;
-            background-color: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            width: 240px;
-            padding: 16px;
+
+        .presentation-control-button.replay {
+            background: rgba(34, 197, 94, 0.9);
+        }
+
+        .presentation-control-button.replay:hover {
+            background: rgba(34, 197, 94, 1);
+        }
+
+        /* Hidden elements */
+        .hidden {
+            display: none !important;
+        }
+
+        .-is-visually-hidden {
+            width: 1px;
+            height: 1px;
+            color: transparent;
+            font-size: 0;
+        }
+
+        #memeText {
             display: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        
-        .settings-panel.active {
-            display: block;
-            animation: fadeIn 0.2s ease;
-        }
-        
-        .settings-header {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .settings-option {
-            margin-bottom: 16px;
-        }
-        
-        .settings-option:last-child {
-            margin-bottom: 0;
-        }
-        
-        .settings-option label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 14px;
-            color: #333;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .settings-option select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-family: inherit;
-            background-color: #f8f8f8;
-        }
-        
-        .settings-option input[type="range"] {
-            width: 100%;
-            margin: 6px 0;
-        }
-        
-        .range-value {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: #666;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* SVG icons */
-        .icon {
-            width: 18px;
-            height: 18px;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            fill: none;
-        }
-        
-        .icon-large {
-            width: 20px;
-            height: 20px;
-        }
-        
-        /* Enhanced responsive styles for mobile */
-        @media (max-width: 768px) {
-            #textOverlay {
-                font-size: 80px;
-                max-width: 90%;
+
+        /* Mobile Responsive - Improved */
+        @media only screen and (max-width: 768px) {
+            .ui-controls {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                gap: 12px;
+                top: 16px;
+                left: 16px;
+                right: 16px;
             }
-            
+
+            .theme-panel,
+            .present-panel {
+                align-items: stretch;
+            }
+
+            .present-mode-section {
+                align-items: stretch;
+            }
+
+            .present-mode-dropdown {
+                right: 0;
+                left: 0;
+            }
+
             #textInput {
-                height: 38px;
-                line-height: 38px;
+                width: 300px;
+                padding: 16px 20px;
                 font-size: 15px;
-                padding: 0 12px;
             }
-            
-            .logo {
-                font-size: 20px;
-            }
-            
-            .settings-panel {
-                width: 220px;
-            }
-            
-            .logo-container {
-                top: 15px;
-                left: 15px;
-            }
-            
-            .settings-menu {
-                top: 15px;
-                right: 15px;
-            }
-            
-            .settings-button {
-                width: 36px;
-                height: 36px;
-            }
-            
-            .input-wrapper {
-                bottom: 15px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            #textOverlay {
-                font-size: 60px;
-            }
-            
-            #textInput {
-                height: 36px;
-                line-height: 36px;
-                font-size: 14px;
-                padding: 0 10px;
-                border-radius: 12px;
-            }
-            
-            .input-wrapper {
-                width: 85%;
+
+            .input-container {
                 bottom: 20px;
             }
-            
-            .logo {
-                font-size: 18px;
+
+            #textOverlay {
+                font-size: 150px;
             }
-            
-            .settings-panel {
-                width: 200px;
-                right: 0;
+
+            body.white #textOverlay {
+                width: 350px;
+                height: 350px;
+                padding: 0;
             }
-            
-            .logo-container {
-                top: 12px;
-                left: 12px;
+
+            #memeContainer {
+                height: 85vh;
+                margin-top: 10%;
             }
-            
-            .settings-menu {
-                top: 12px;
-                right: 12px;
+
+            .green div#memeContainer {
+                min-height: 85vh;
+                height: auto;
             }
-            
-            .settings-button {
-                width: 32px;
-                height: 32px;
+
+            body.green #textOverlay {
+                font-size: 15vw !important;
+                position: static;
+                transform: none;
             }
-        }
-        
-        /* Small mobile devices */
-        @media (max-width: 360px) {
-            #textInput {
-                height: 34px;
-                line-height: 34px;
-                font-size: 13px;
+
+            .presentation-end-controls {
+                flex-direction: column;
+                gap: 12px;
             }
-            
-            .logo {
-                font-size: 16px;
-            }
-            
-            .input-wrapper {
-                bottom: 15px;
-                width: 90%;
+
+            .presentation-control-button {
+                padding: 14px 20px;
+                font-size: 14px;
             }
         }
-        
-        /* Landscape mode optimization */
-        @media (max-height: 500px) and (orientation: landscape) {
-            .input-wrapper {
-                bottom: 10px;
-            }
-            
-            #textInput {
-                height: 32px;
-                line-height: 32px;
-            }
-            
-            .logo-container {
-                top: 10px;
-                left: 10px;
-            }
-            
-            .settings-menu {
-                top: 10px;
-                right: 10px;
+
+        @media only screen and (max-width: 1023px) and (orientation: landscape) {
+            .green div#memeContainer {
+                margin: 0 auto;
+                display: block;
             }
         }
-        
-        /* iPhone SE and other very small devices */
-        @media (max-width: 375px) and (max-height: 667px) {
-            #textInput {
-                height: 32px;
-                line-height: 32px;
-                font-size: 13px;
-            }
-            
-            .logo-container {
-                top: 10px;
-                left: 10px;
-            }
-            
-            .settings-menu {
-                top: 10px;
-                right: 10px;
-            }
-            
-            .input-wrapper {
-                bottom: 15px;
-            }
-        }
-        
-        /* Fix for iOS Safari's input field issues */
-        @supports (-webkit-touch-callout: none) {
-            #textInput {
-                font-size: 16px; /* Prevent zoom on focus in iOS */
-                padding-left: 5px;
-                padding-right: 5px;
-            }
-            
-            .input-wrapper {
-                bottom: 15px; /* Adjust for iOS devices */
-            }
+
+        /* FIXED: Remove backdrop entirely and use different approach */
+        .dropdown-backdrop {
+            display: none !important;
         }
     </style>
 </head>
-<body>
-    <!-- Logo with special styling for "bay" and verified badge -->
-    <div class="logo-container">
-        <div class="logo" id="brandLogo">
-            tan<span class="highlight" id="highlightPart">bay</span>cu
-        </div>
-        <div class="verified-badge">✓</div>
-    </div>
+
+<body class="white">
+    <h1 class="-is-visually-hidden">Brat Generator</h1>
     
-    <!-- Settings menu with icon only -->
-    <div class="settings-menu">
-        <button class="settings-button" id="settingsToggle">
-            <!-- Settings icon (Lucide style) -->
-            <svg class="icon icon-large" viewBox="0 0 24 24">
-                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-        </button>
-        <div class="settings-panel" id="settingsPanel">
-            <div class="settings-header">
-                <!-- Sliders icon (Lucide style) -->
-                <svg class="icon" viewBox="0 0 24 24">
-                    <path d="M3 3h18v18H3z"></path>
-                    <path d="M13 6h5"></path>
-                    <path d="M13 12h5"></path>
-                    <path d="M13 18h5"></path>
-                    <path d="M6 6h.01"></path>
-                    <path d="M6 12h.01"></path>
-                    <path d="M6 18h.01"></path>
-                </svg>
-                Tùy chỉnh hiển thị
-            </div>
-            <div class="settings-option">
-                <label for="blurAmount">
-                    <!-- Blur icon (Lucide style) -->
-                    <svg class="icon" viewBox="0 0 24 24">
-                        <path d="M12 3v18"></path>
-                        <path d="M3 12h18"></path>
-                    </svg>
-                    Độ mờ:
-                </label>
-                <input type="range" id="blurAmount" min="0" max="5" step="0.1" value="1.5">
-                <div class="range-value">
-                    <span>0</span>
-                    <span>5</span>
+    <!-- UI Controls -->
+    <div class="ui-controls" id="uiControls">
+        <!-- Theme Panel -->
+        <div class="theme-panel">
+            <div class="control-label">Theme</div>
+            <div class="color-selector">
+                <div class="color-dropdown-trigger" id="colorTrigger">
+                    <div class="color-preview" id="colorPreview" style="background-color: #fff;"></div>
+                    <span id="colorLabel">White</span>
+                    <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.6;"></i>
                 </div>
-            </div>
-            <div class="settings-option">
-                <label for="textColor">
-                    <!-- Palette icon (Lucide style) -->
-                    <svg class="icon" viewBox="0 0 24 24">
-                        <circle cx="13.5" cy="6.5" r="2.5"></circle>
-                        <circle cx="17.5" cy="10.5" r="2.5"></circle>
-                        <circle cx="8.5" cy="7.5" r="2.5"></circle>
-                        <circle cx="6.5" cy="12.5" r="2.5"></circle>
-                        <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path>
-                    </svg>
-                    Màu chữ:
-                </label>
-                <select id="textColor">
-                    <option value="#000000">Đen</option>
-                    <option value="#333333">Xám đậm</option>
-                    <option value="#ff3366">Đỏ</option>
-                    <option value="#1DA1F2">Xanh</option>
-                </select>
-            </div>
-            <div class="settings-option">
-                <label for="textSize">
-                    <!-- Type icon (Lucide style) -->
-                    <svg class="icon" viewBox="0 0 24 24">
-                        <polyline points="4 7 4 4 20 4 20 7"></polyline>
-                        <line x1="9" y1="20" x2="15" y2="20"></line>
-                        <line x1="12" y1="4" x2="12" y2="20"></line>
-                    </svg>
-                    Kích thước chữ:
-                </label>
-                <input type="range" id="textSize" min="60" max="140" step="10" value="100">
-                <div class="range-value">
-                    <span>Nhỏ</span>
-                    <span>Lớn</span>
+                <div class="color-dropdown" id="colorDropdown">
+                    <div class="color-option active" data-theme="white" id="whiteOption">
+                        <div class="color-swatch" style="background-color: #fff;"></div>
+                        <span>White</span>
+                    </div>
+                    <div class="color-option" data-theme="green" id="greenOption">
+                        <div class="color-swatch" style="background-color: #8ACF00;"></div>
+                        <span>Green</span>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- Center Space -->
+        <div class="center-space"></div>
+
+        <!-- Present Panel -->
+        <div class="present-panel">
+            <!-- Session Status -->
+            <div class="session-status" id="sessionStatus">
+                <div class="session-indicator" id="sessionIndicator"></div>
+                <span id="sessionText">Ready</span>
+            </div>
+
+            <!-- Present Mode Section -->
+            <div class="present-mode-section">
+                <div class="control-label" style="text-align: right;">Present Mode</div>
+                <div class="present-mode-selector">
+                    <div class="present-mode-trigger" id="presentModeTrigger">
+                        <span id="presentModeLabel">Current Session</span>
+                        <i data-lucide="chevron-down" style="width: 10px; height: 10px; opacity: 0.6;"></i>
+                    </div>
+                    <div class="present-mode-dropdown" id="presentModeDropdown">
+                        <div class="present-mode-option active" data-mode="current" id="currentOption">
+                            <i data-lucide="edit-3" style="width: 10px; height: 10px;"></i>
+                            <span>Current Session</span>
+                        </div>
+                        <div class="present-mode-option" data-mode="white" id="whiteOnlyOption">
+                            <div class="color-swatch" style="background-color: #fff; width: 10px; height: 10px;"></div>
+                            <span>White Only</span>
+                        </div>
+                        <div class="present-mode-option" data-mode="green" id="greenOnlyOption">
+                            <div class="color-swatch" style="background-color: #8ACF00; width: 10px; height: 10px;"></div>
+                            <span>Green Only</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Button -->
+            <button class="play-button" id="playButton">
+                <i data-lucide="play" style="width: 16px; height: 16px;"></i>
+                <span>Present</span>
+            </button>
+        </div>
     </div>
-    
-    <!-- Main text display area -->
+
+    <!-- Main Content -->
     <div id="memeContainer">
+        <div id="memeText"></div>
         <div id="textOverlay"></div>
     </div>
-    
-    <!-- Improved input field with wrapper -->
-    <div class="input-wrapper">
-        <input type="text" id="textInput" value="Nhập văn bản ở đây..." maxlength="50">
+
+    <!-- Text Input -->
+    <div class="input-container" id="inputContainer">
+        <input type="text" id="textInput" placeholder="Type your text here..." value="brat and it's completely different but also still brat">
     </div>
-    
+
+    <!-- Presentation End Controls -->
+    <div class="presentation-end-controls" id="presentationEndControls">
+        <button class="presentation-control-button replay" id="replayPresentationButton">
+            <i data-lucide="rotate-ccw" style="width: 18px; height: 18px;"></i>
+            <span>Replay</span>
+        </button>
+        <button class="presentation-control-button" id="closePresentationButton">
+            <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+            <span>Close</span>
+        </button>
+    </div>
+
     <script>
-        // TextFit library - simplified version
-        function textFit(el, options) {
-            if (!options) options = {};
-            
-            const settings = {
-                minFontSize: options.minFontSize || 8,
-                maxFontSize: options.maxFontSize || 100
-            };
-            
-            // Create or get the inner span
-            let innerSpan;
-            if (el.innerHTML.indexOf('textFitted') === -1) {
-                innerSpan = document.createElement('span');
-                innerSpan.className = 'textFitted';
-                innerSpan.style.display = 'inline-block';
-                innerSpan.innerHTML = el.innerHTML;
-                el.innerHTML = '';
-                el.appendChild(innerSpan);
-            } else {
-                innerSpan = el.querySelector('span.textFitted');
-            }
-            
-            // Binary search for best fit
-            let low = settings.minFontSize;
-            let high = settings.maxFontSize;
-            let size = low;
-            
-            while (low <= high) {
-                const mid = Math.floor((high + low) / 2);
-                innerSpan.style.fontSize = mid + 'px';
-                
-                if (innerSpan.scrollWidth <= el.clientWidth && innerSpan.scrollHeight <= el.clientHeight) {
-                    size = mid;
-                    low = mid + 1;
-                } else {
-                    high = mid - 1;
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Global variables
+        let presentationMode = false;
+        let currentSession = []; // Current typing session
+        let allHistory = []; // All typing history
+        let isRecording = false;
+        let currentTheme = 'white';
+        let presentMode = 'current'; // 'current', 'white', 'green'
+        let presentationTimeout;
+        let sessionStartTime = null;
+        let lastPresentationData = []; // Store last presentation data for replay
+        let dropdownJustOpened = false; // Prevent immediate close
+
+        // Function to format text for better line breaks - GIỮ NGUYÊN
+        function formatTextForDisplay(text, isGreen = false) {
+            if (isGreen && text.length > 8) {
+                const words = text.split(' ');
+                if (words.length > 2) {
+                    const mid = Math.ceil(words.length / 2);
+                    const line1 = words.slice(0, mid).join(' ');
+                    const line2 = words.slice(mid).join(' ');
+                    return line1 + '\n' + line2;
                 }
             }
-            
-            innerSpan.style.fontSize = size + 'px';
+            return text;
         }
-        
-        // Initialize
+
+        // TextFit library - GIỮ NGUYÊN HOÀN TOÀN
+        (function (root, factory) {
+            "use strict";
+            if (typeof define === "function" && define.amd) {
+                define([], factory);
+            } else if (typeof exports === "object") {
+                module.exports = factory();
+            } else {
+                root.textFit = factory();
+            }
+        }(typeof global === "object" ? global : this, function () {
+            "use strict";
+            var defaultSettings = {
+                alignVert: false,
+                alignHoriz: false,
+                multiLine: true,
+                detectMultiLine: true,
+                minFontSize: 8,
+                maxFontSize: 80,
+                reProcess: true,
+                widthOnly: false,
+                alignVertWithFlexbox: false,
+            };
+
+            return function textFit(els, options) {
+                if (!jQuery("body").hasClass("black")) {
+                    options.maxFontSize = 170;
+                }
+                
+                if (!options) options = {};
+
+                var settings = {};
+                for (var key in defaultSettings) {
+                    if (options.hasOwnProperty(key)) {
+                        settings[key] = options[key];
+                    } else {
+                        settings[key] = defaultSettings[key];
+                    }
+                }
+
+                if (typeof els.toArray === "function") {
+                    els = els.toArray();
+                }
+
+                var elType = Object.prototype.toString.call(els);
+                if (elType !== '[object Array]' && elType !== '[object NodeList]' &&
+                    elType !== '[object HTMLCollection]') {
+                    els = [els];
+                }
+
+                for (var i = 0; i < els.length; i++) {
+                    processItem(els[i], settings);
+                }
+            };
+
+            function processItem(el, settings) {
+                if (!isElement(el) || (!settings.reProcess && el.getAttribute('textFitted'))) {
+                    return false;
+                }
+
+                if (!settings.reProcess) {
+                    el.setAttribute('textFitted', 1);
+                }
+
+                var innerSpan, originalHeight, originalHTML, originalWidth;
+                var low, mid, high;
+
+                originalHTML = el.innerHTML;
+                originalWidth = innerWidth(el);
+                originalHeight = innerHeight(el);
+
+                if (!originalWidth || (!settings.widthOnly && !originalHeight)) {
+                    if (!settings.widthOnly)
+                        throw new Error('Set a static height and width on the target element ' + el.outerHTML +
+                            ' before using textFit!');
+                    else
+                        throw new Error('Set a static width on the target element ' + el.outerHTML +
+                            ' before using textFit!');
+                }
+
+                if (originalHTML.indexOf('textFitted') === -1) {
+                    innerSpan = document.createElement('span');
+                    innerSpan.className = 'textFitted';
+                    innerSpan.style['display'] = 'inline-block';
+                    innerSpan.innerHTML = originalHTML;
+                    el.innerHTML = '';
+                    el.appendChild(innerSpan);
+                } else {
+                    innerSpan = el.querySelector('span.textFitted');
+                    if (hasClass(innerSpan, 'textFitAlignVert')) {
+                        innerSpan.className = innerSpan.className.replace('textFitAlignVert', '');
+                        innerSpan.style['height'] = '';
+                        el.className.replace('textFitAlignVertFlex', '');
+                    }
+                }
+
+                if (settings.alignHoriz) {
+                    el.style['text-align'] = 'center';
+                    innerSpan.style['text-align'] = 'center';
+                }
+
+                var multiLine = settings.multiLine;
+                if (settings.detectMultiLine && !multiLine &&
+                    innerSpan.getBoundingClientRect().height >= parseInt(window.getComputedStyle(innerSpan)['font-size'], 10) * 2) {
+                    multiLine = true;
+                }
+
+                // Always allow multiline for better text wrapping
+                innerSpan.style['white-space'] = 'pre-line';
+                innerSpan.style['word-wrap'] = 'break-word';
+
+                low = settings.minFontSize;
+                high = settings.maxFontSize;
+
+                var size = low;
+                while (low <= high) {
+                    mid = (high + low) >> 1;
+                    innerSpan.style.fontSize = mid + 'px';
+                    var innerSpanBoundingClientRect = innerSpan.getBoundingClientRect();
+
+                    if (
+                        innerSpanBoundingClientRect.width <= originalWidth
+                        && (settings.widthOnly || innerSpanBoundingClientRect.height <= originalHeight)
+                    ) {
+                        size = mid;
+                        low = mid + 1;
+                    } else {
+                        high = mid - 1;
+                    }
+                }
+
+                if (innerSpan.style.fontSize != size + 'px') innerSpan.style.fontSize = size + 'px';
+
+                if (settings.alignVert) {
+                    addStyleSheet();
+                    var height = innerSpan.scrollHeight;
+                    if (window.getComputedStyle(el)['position'] === "static") {
+                        el.style['position'] = 'relative';
+                    }
+                    if (!hasClass(innerSpan, "textFitAlignVert")) {
+                        innerSpan.className = innerSpan.className + " textFitAlignVert";
+                    }
+                    innerSpan.style['height'] = height + "px";
+                    if (settings.alignVertWithFlexbox && !hasClass(el, "textFitAlignVertFlex")) {
+                        el.className = el.className + " textFitAlignVertFlex";
+                    }
+                }
+            }
+
+            function innerHeight(el) {
+                var style = window.getComputedStyle(el, null);
+                return el.getBoundingClientRect().height -
+                    parseInt(style.getPropertyValue('padding-top'), 10) -
+                    parseInt(style.getPropertyValue('padding-bottom'), 10);
+            }
+
+            function innerWidth(el) {
+                var style = window.getComputedStyle(el, null);
+                return el.getBoundingClientRect().width -
+                    parseInt(style.getPropertyValue('padding-left'), 10) -
+                    parseInt(style.getPropertyValue('padding-right'), 10);
+            }
+
+            function isElement(o) {
+                return (
+                    typeof HTMLElement === "object" ? o instanceof HTMLElement :
+                        o && typeof o === "object" && o !== null && o.nodeType === 1 && typeof o.nodeName === "string"
+                );
+            }
+
+            function hasClass(element, cls) {
+                return (' ' + element.className + ' ').indexOf(' ' + cls + ' ') > -1;
+            }
+
+            function addStyleSheet() {
+                if (document.getElementById("textFitStyleSheet")) return;
+                var style = [
+                    ".textFitAlignVert{",
+                    "position: absolute;",
+                    "top: 0; right: 0; bottom: 0; left: 0;",
+                    "margin: auto;",
+                    "display: flex;",
+                    "justify-content: center;",
+                    "flex-direction: column;",
+                    "}",
+                    ".textFitAlignVertFlex{",
+                    "display: flex;",
+                    "}",
+                    ".textFitAlignVertFlex .textFitAlignVert{",
+                    "position: static;",
+                    "}",].join("");
+
+                var css = document.createElement("style");
+                css.type = "text/css";
+                css.id = "textFitStyleSheet";
+                css.innerHTML = style;
+                document.body.appendChild(css);
+            }
+        }));
+
+        // Main functionality
         const textInput = document.getElementById('textInput');
         const textOverlay = document.getElementById('textOverlay');
-        const settingsToggle = document.getElementById('settingsToggle');
-        const settingsPanel = document.getElementById('settingsPanel');
-        const blurAmount = document.getElementById('blurAmount');
-        const textColor = document.getElementById('textColor');
-        const textSize = document.getElementById('textSize');
-        const brandLogo = document.getElementById('brandLogo');
-        const highlightPart = document.getElementById('highlightPart');
-        
-        // Set initial text
-        textOverlay.innerText = textInput.value;
-        textFit(textOverlay, { maxFontSize: 100 });
-        
-        // Clear default text on first focus
-        textInput.addEventListener('focus', function() {
-            if (this.value === 'Nhập văn bản ở đây...') {
-                this.value = '';
-            }
-        });
-        
-        // Update text as user types
-        textInput.addEventListener('input', function() {
-            textOverlay.innerText = this.value;
-            textFit(textOverlay, { maxFontSize: parseInt(textSize.value) });
-        });
-        
-        // Handle window resize for better responsiveness
-        window.addEventListener('resize', function() {
-            textFit(textOverlay, { maxFontSize: parseInt(textSize.value) });
-        });
-        
-        // Toggle settings panel
-        settingsToggle.addEventListener('click', function(event) {
-            event.stopPropagation();
-            settingsPanel.classList.toggle('active');
-        });
-        
-        // Close settings panel when clicking outside
-        document.addEventListener('click', function(event) {
-            if (!settingsPanel.contains(event.target) && event.target !== settingsToggle) {
-                settingsPanel.classList.remove('active');
-            }
-        });
-        
-        // Update blur amount
-        blurAmount.addEventListener('input', function() {
-            textOverlay.style.filter = `blur(${this.value}px)`;
-        });
-        
-        // Update text color
-        textColor.addEventListener('change', function() {
-            textOverlay.style.color = this.value;
-        });
-        
-        // Update text size
-        textSize.addEventListener('input', function() {
-            textFit(textOverlay, { maxFontSize: parseInt(this.value) });
-        });
-        
-        // Brand name cycling
-        const brandNames = [
-            { text: "tan<span class='highlight'>bay</span>cu", highlight: "bay" },
-            { text: "<span class='highlight'>Tan</span> Minh Bay", highlight: "Tan" },
-            { text: "si<span class='highlight'>tinh</span>", highlight: "tinh" },
-            { text: "<span class='highlight'>tan</span>baycu", highlight: "tan" },
-            { text: "Tran Minh <span class='highlight'>Tan</span>", highlight: "Tan" }
-        ];
-        
-        let currentBrandIndex = 0;
-        
-        function cycleBrandName() {
-            const brand = brandNames[currentBrandIndex];
-            brandLogo.innerHTML = brand.text;
-            
-            currentBrandIndex = (currentBrandIndex + 1) % brandNames.length;
+        const colorTrigger = document.getElementById('colorTrigger');
+        const colorDropdown = document.getElementById('colorDropdown');
+        const colorPreview = document.getElementById('colorPreview');
+        const colorLabel = document.getElementById('colorLabel');
+        const playButton = document.getElementById('playButton');
+        const uiControls = document.getElementById('uiControls');
+        const inputContainer = document.getElementById('inputContainer');
+        const presentModeTrigger = document.getElementById('presentModeTrigger');
+        const presentModeDropdown = document.getElementById('presentModeDropdown');
+        const presentModeLabel = document.getElementById('presentModeLabel');
+        const presentationEndControls = document.getElementById('presentationEndControls');
+        const closePresentationButton = document.getElementById('closePresentationButton');
+        const replayPresentationButton = document.getElementById('replayPresentationButton');
+        const sessionStatus = document.getElementById('sessionStatus');
+        const sessionIndicator = document.getElementById('sessionIndicator');
+        const sessionText = document.getElementById('sessionText');
+
+        // SIMPLE DROPDOWN SYSTEM
+        function closeAllDropdowns() {
+            if (colorDropdown) colorDropdown.classList.remove('open');
+            if (presentModeDropdown) presentModeDropdown.classList.remove('open');
         }
-        
-        // Start cycling brand names
-        setInterval(cycleBrandName, 3000);
-        
-        // Prevent iOS zoom on input focus
-        document.addEventListener('touchstart', function(event) {
-            if (event.target.tagName === 'INPUT') {
-                const viewportMeta = document.querySelector('meta[name="viewport"]');
-                if (viewportMeta) {
-                    viewportMeta.content = 'width=device-width, initial-scale=1, maximum-scale=1';
-                    setTimeout(function() {
-                        viewportMeta.content = 'width=device-width, initial-scale=1';
-                    }, 300);
+
+        // Color theme functions
+        function setTheme(themeName) {
+            const options = document.querySelectorAll('.color-option');
+            options.forEach(opt => opt.classList.remove('active'));
+            
+            if (themeName === 'white') {
+                document.body.className = 'white';
+                colorPreview.style.backgroundColor = '#fff';
+                colorLabel.textContent = 'White';
+                document.getElementById('whiteOption').classList.add('active');
+                currentTheme = 'white';
+                if (!presentationMode) {
+                    textInput.value = "brat and it's completely different but also still brat";
+                }
+            } else if (themeName === 'green') {
+                document.body.className = 'green';
+                colorPreview.style.backgroundColor = '#8ACF00';
+                colorLabel.textContent = 'Green';
+                document.getElementById('greenOption').classList.add('active');
+                currentTheme = 'green';
+                if (!presentationMode) {
+                    textInput.value = "brat";
                 }
             }
-        }, false);
+            
+            updateText();
+            closeAllDropdowns();
+        }
+
+        // Present mode functions
+        function setPresentMode(mode) {
+            const options = document.querySelectorAll('.present-mode-option');
+            options.forEach(opt => opt.classList.remove('active'));
+            
+            presentMode = mode;
+            
+            if (mode === 'current') {
+                presentModeLabel.textContent = 'Current Session';
+                document.getElementById('currentOption').classList.add('active');
+            } else if (mode === 'white') {
+                presentModeLabel.textContent = 'White Only';
+                document.getElementById('whiteOnlyOption').classList.add('active');
+            } else if (mode === 'green') {
+                presentModeLabel.textContent = 'Green Only';
+                document.getElementById('greenOnlyOption').classList.add('active');
+            }
+            
+            closeAllDropdowns();
+        }
+
+        // SIMPLE EVENT LISTENERS
+        function setupEventListeners() {
+            console.log('🚀 Setting up dropdown event listeners...');
+            
+            // Kiểm tra elements tồn tại
+            if (!colorTrigger || !colorDropdown || !presentModeTrigger || !presentModeDropdown) {
+                console.error('❌ Some dropdown elements not found!');
+                return;
+            }
+
+            // Color trigger
+            colorTrigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (colorDropdown.classList.contains('open')) {
+                    closeAllDropdowns();
+                } else {
+                    closeAllDropdowns();
+                    colorDropdown.classList.add('open');
+                    dropdownJustOpened = true;
+                    setTimeout(() => {
+                        dropdownJustOpened = false;
+                    }, 100);
+                }
+            });
+
+            // Present mode trigger
+            presentModeTrigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (presentModeDropdown.classList.contains('open')) {
+                    closeAllDropdowns();
+                } else {
+                    closeAllDropdowns();
+                    presentModeDropdown.classList.add('open');
+                    dropdownJustOpened = true;
+                    setTimeout(() => {
+                        dropdownJustOpened = false;
+                    }, 100);
+                }
+            });
+
+            // Color options
+            const whiteOption = document.getElementById('whiteOption');
+            const greenOption = document.getElementById('greenOption');
+            
+            if (whiteOption) {
+                whiteOption.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    setTheme('white');
+                });
+            }
+            
+            if (greenOption) {
+                greenOption.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    setTheme('green');
+                });
+            }
+
+            // Present mode options
+            const currentOption = document.getElementById('currentOption');
+            const whiteOnlyOption = document.getElementById('whiteOnlyOption');
+            const greenOnlyOption = document.getElementById('greenOnlyOption');
+            
+            if (currentOption) {
+                currentOption.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    setPresentMode('current');
+                });
+            }
+            
+            if (whiteOnlyOption) {
+                whiteOnlyOption.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    setPresentMode('white');
+                });
+            }
+            
+            if (greenOnlyOption) {
+                greenOnlyOption.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    setPresentMode('green');
+                });
+            }
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(e) {
+                // Don't close if dropdown just opened
+                if (dropdownJustOpened) {
+                    return;
+                }
+                
+                if (!e.target.closest('.color-selector') && !e.target.closest('.present-mode-selector')) {
+                    closeAllDropdowns();
+                }
+            });
+            
+            console.log('✅ Dropdown event listeners ready!');
+        }
+
+        // Session management
+        function startNewSession() {
+            currentSession = [];
+            sessionStartTime = Date.now();
+            isRecording = true;
+            updateSessionStatus('recording');
+        }
+
+        function endCurrentSession() {
+            if (currentSession.length > 0) {
+                allHistory.push(...currentSession);
+            }
+            isRecording = false;
+            updateSessionStatus('ready');
+        }
+
+        function updateSessionStatus(status) {
+            sessionIndicator.className = `session-indicator ${status}`;
+            switch(status) {
+                case 'recording':
+                    sessionText.textContent = 'Recording';
+                    break;
+                case 'ready':
+                    sessionText.textContent = currentSession.length > 0 ? 'Ready to Present' : 'Ready';
+                    break;
+                default:
+                    sessionText.textContent = 'Ready';
+            }
+        }
+
+        function recordTyping(text, timestamp) {
+            if (isRecording) {
+                currentSession.push({
+                    text: text,
+                    timestamp: timestamp - sessionStartTime,
+                    theme: currentTheme
+                });
+            }
+        }
+
+        // Text input functionality - GIỮ NGUYÊN LOGIC CŨ
+        function updateText() {
+            const text = textInput.value;
+            const isGreen = document.body.classList.contains('green');
+            const formattedText = formatTextForDisplay(text, isGreen);
+            textOverlay.innerText = formattedText;
+            $("#memeText").css({"display": "none"});
+            textFit(textOverlay, {maxFontSize: 75});
+            
+            if (isRecording) {
+                recordTyping(text, Date.now());
+            }
+        }
+
+        textInput.addEventListener('input', updateText);
+
+        // Theme setup - GIỮ NGUYÊN LOGIC CŨ HOÀN TOÀN
+        function setupTheme(color) {
+            currentTheme = color;
+            var body = document.getElementsByTagName("body")[0];
+            var textInput = document.getElementById("textInput");
+
+            if (color === "green") {
+                body.classList.remove("white");
+                body.classList.add("green");
+                colorPreview.style.backgroundColor = '#8ACF00';
+                colorLabel.textContent = 'Green';
+                if (!presentationMode) {
+                    textInput.value = "brat";
+                }
+                const formattedText = formatTextForDisplay(textInput.value, true);
+                textOverlay.innerText = formattedText;
+                textFit(textOverlay, {maxFontSize: 70});
+                jQuery("body.green div#textOverlay span.textFitted").html("");
+            } else {
+                body.classList.remove("green");
+                body.classList.add("white");
+                colorPreview.style.backgroundColor = '#fff';
+                colorLabel.textContent = 'White';
+                if (!presentationMode) {
+                    textInput.value = "brat and it's completely different but also still brat";
+                }
+                const formattedText = formatTextForDisplay(textInput.value, false);
+                textOverlay.innerText = formattedText;
+                textFit(textOverlay, {maxFontSize: 70});
+                jQuery("body.white div#textOverlay span.textFitted").html("");
+            }
+        }
+
+        // Get presentation data based on mode
+        function getPresentationData() {
+            switch(presentMode) {
+                case 'current':
+                    return currentSession;
+                case 'white':
+                    return allHistory.filter(step => step.theme === 'white');
+                case 'green':
+                    return allHistory.filter(step => step.theme === 'green');
+                default:
+                    return currentSession;
+            }
+        }
+
+        // Presentation mode - REPLAY SESSION
+        function startPresentation() {
+            const presentationData = getPresentationData();
+            
+            if (presentationData.length === 0) {
+                const modeText = presentMode === 'current' ? 'current session' : `${presentMode} theme`;
+                alert(`No typing data available for ${modeText}. Please type something first!`);
+                return;
+            }
+
+            lastPresentationData = [...presentationData];
+            presentationMode = true;
+            document.body.classList.add('presentation-mode');
+            closeAllDropdowns();
+            
+            runPresentation(presentationData);
+        }
+
+        function runPresentation(presentationData) {
+            textOverlay.innerText = '';
+            
+            let currentIndex = 0;
+            
+            function replayTyping() {
+                if (currentIndex < presentationData.length) {
+                    const currentStep = presentationData[currentIndex];
+                    const nextStep = presentationData[currentIndex + 1];
+                    const delay = currentIndex === 0 ? 500 : 
+                        (nextStep ? Math.min(nextStep.timestamp - currentStep.timestamp, 1000) : 0);
+                    
+                    presentationTimeout = setTimeout(() => {
+                        if (currentStep.theme !== currentTheme) {
+                            setupTheme(currentStep.theme);
+                        }
+                        
+                        const isGreen = currentStep.theme === 'green';
+                        const formattedText = formatTextForDisplay(currentStep.text, isGreen);
+                        textOverlay.innerText = formattedText;
+                        $("#memeText").css({"display": "none"});
+                        textFit(textOverlay, {maxFontSize: 75});
+                        
+                        currentIndex++;
+                        replayTyping();
+                    }, delay);
+                } else {
+                    setTimeout(() => {
+                        presentationEndControls.classList.add('show');
+                    }, 1000);
+                }
+            }
+            
+            replayTyping();
+            
+            playButton.innerHTML = '<i data-lucide="square" style="width: 16px; height: 16px;"></i><span>Stop</span>';
+            playButton.disabled = true;
+            lucide.createIcons();
+        }
+
+        function exitPresentation() {
+            presentationMode = false;
+            document.body.classList.remove('presentation-mode');
+            presentationEndControls.classList.remove('show');
+            
+            if (presentationTimeout) {
+                clearTimeout(presentationTimeout);
+            }
+            
+            updateText();
+            
+            playButton.innerHTML = '<i data-lucide="play" style="width: 16px; height: 16px;"></i><span>Present</span>';
+            playButton.disabled = false;
+            lucide.createIcons();
+        }
+
+        function replayPresentation() {
+            if (lastPresentationData.length > 0) {
+                presentationEndControls.classList.remove('show');
+                if (presentationTimeout) {
+                    clearTimeout(presentationTimeout);
+                }
+                runPresentation(lastPresentationData);
+            }
+        }
+
+        playButton.addEventListener('click', function() {
+            if (presentationMode) {
+                exitPresentation();
+            } else {
+                startPresentation();
+            }
+        });
+
+        closePresentationButton.addEventListener('click', function() {
+            exitPresentation();
+        });
+
+        replayPresentationButton.addEventListener('click', function() {
+            replayPresentation();
+        });
+
+        textInput.addEventListener('focus', function() {
+            if (!isRecording && !presentationMode) {
+                startNewSession();
+            }
+        });
+
+        textInput.addEventListener('blur', function() {
+            if (isRecording && !presentationMode) {
+                setTimeout(() => {
+                    if (!textInput.matches(':focus')) {
+                        endCurrentSession();
+                    }
+                }, 100);
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (presentationMode) {
+                    exitPresentation();
+                } else {
+                    closeAllDropdowns();
+                }
+            }
+            if (e.key === ' ' && e.ctrlKey) {
+                e.preventDefault();
+                if (presentationMode) {
+                    exitPresentation();
+                } else {
+                    startPresentation();
+                }
+            }
+            if (e.key === 'r' && e.ctrlKey && presentationMode) {
+                e.preventDefault();
+                replayPresentation();
+            }
+            if (e.key === 'Enter' && isRecording && !presentationMode) {
+                textInput.blur();
+                endCurrentSession();
+            }
+        });
+
+        // Initialize
+        setupTheme('white');
+        
+        function initializeText() {
+            const text = textInput.value;
+            const isGreen = document.body.classList.contains('green');
+            const formattedText = formatTextForDisplay(text, isGreen);
+            textOverlay.innerText = formattedText;
+            textFit(textOverlay, {maxFontSize: 75});
+        }
+
+        // Setup everything when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            initializeText();
+            updateSessionStatus('ready');
+            textInput.focus();
+            
+
+        });
     </script>
 </body>
 </html>
